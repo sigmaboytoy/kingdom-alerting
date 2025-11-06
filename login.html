@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kingdom Alerting - Login</title>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .login-container {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      width: 400px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 1rem;
+      color: #1a202c;
+    }
+    p {
+      text-align: center;
+      color: #718096;
+      margin-bottom: 1.5rem;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.25rem;
+      font-weight: 600;
+      color: #2d3748;
+    }
+    input, select {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    .error {
+      border-color: #f56565 !important;
+      background: #fed7d7;
+    }
+    button {
+      width: 100%;
+      padding: 0.75rem;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #5568d3;
+    }
+    .notification {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      background: white;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      max-width: 300px;
+    }
+    .notification.show {
+      display: flex;
+    }
+    .notification.error { border-left: 4px solid #f56565; }
+    .notification.success { border-left: 4px solid #48bb78; }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h1>🛡️ Kingdom Alerting</h1>
+    <p>Login with your Peel District School Board email</p>
+    <form id="loginForm">
+      <label for="username">Username *</label>
+      <input type="text" id="username" placeholder="Enter your username" required minlength="2" maxlength="30">
+      
+      <label for="email">Email *@pdsb.net *</label>
+      <input type="email" id="email" placeholder="Enter your @pdsb.net email" required>
+      
+      <label for="school">Select your school *</label>
+      <select id="school" required>
+        <option value="">Select your school</option>
+        <!-- 📚 Peel District School Board Schools -->
+        <option value="Chinguacousy Secondary School">Chinguacousy Secondary School</option>
+        <option value="Turner Fenton Secondary School">Turner Fenton Secondary School</option>
+        <option value="North Park Secondary School">North Park Secondary School</option>
+        <option value="Louise Arbour Secondary School">Louise Arbour Secondary School</option>
+        <option value="Port Credit Secondary School">Port Credit Secondary School</option>
+        <option value="Glenforest Secondary School">Glenforest Secondary School</option>
+        <option value="John Fraser Secondary School">John Fraser Secondary School</option>
+        <option value="Meadowvale Secondary School">Meadowvale Secondary School</option>
+        <option value="Mayfield Secondary School">Mayfield Secondary School</option>
+        <option value="Burnt Elm Public School">Burnt Elm Public School</option>
+        <option value="Fairwind Senior Public School">Fairwind Senior Public School</option>
+        <option value="Ellwood Memorial Public School">Ellwood Memorial Public School</option>
+        <!-- 💻 Virtual Schools -->
+        <option value="Peel Virtual Secondary School (PVSS)">Peel Virtual Secondary School (PVSS)</option>
+        <option value="Peel Elementary Virtual School (PEVS)">Peel Elementary Virtual School (PEVS)</option>
+        <!-- 🏠 Homeschool Option -->
+        <option value="Homeschool">Homeschool (via Notice of Intent to Peel District School Board)</option>
+      </select>
+
+      <button type="submit">Login / Sign Up</button>
+    </form>
+  </div>
+
+  <div class="notification" id="notification"><span id="notificationText"></span></div>
+
+  <script>
+    const loginForm = document.getElementById('loginForm');
+    const notification = document.getElementById('notification');
+    const notificationText = document.getElementById('notificationText');
+
+    function showNotification(message, type='success') {
+      notificationText.textContent = message;
+      notification.className = `notification ${type} show`;
+      setTimeout(() => { notification.classList.remove('show'); }, 4000);
+    }
+
+    function validateEmail(email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return emailRegex.test(email) && email.toLowerCase().endsWith('@pdsb.net');
+    }
+
+    loginForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const username = document.getElementById('username');
+      const email = document.getElementById('email');
+      const school = document.getElementById('school');
+
+      let valid = true;
+      username.classList.remove('error');
+      email.classList.remove('error');
+      school.classList.remove('error');
+
+      if(username.value.trim().length < 2) { username.classList.add('error'); valid=false; }
+      if(!validateEmail(email.value.trim())) { email.classList.add('error'); valid=false; }
+      if(!school.value) { school.classList.add('error'); valid=false; }
+
+      if(!valid) {
+        showNotification('Please fix the highlighted fields', 'error');
+        return;
+      }
+
+      // Save user data (can later connect to server or localStorage)
+      const userData = {
+        username: username.value.trim(),
+        email: email.value.trim(),
+        school: school.value
+      };
+      localStorage.setItem('userProfile', JSON.stringify(userData));
+      showNotification(`Welcome ${userData.username}!`, 'success');
+
+      // Redirect to main dashboard (replace with actual path)
+      setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
+    });
+  </script>
+</body>
+</html>
