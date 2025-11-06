@@ -26,9 +26,9 @@
       letter-spacing: 1px;
     }
     main {
-      margin-top: 40px;
+      margin-top: 30px;
       width: 90%;
-      max-width: 600px;
+      max-width: 650px;
       background: white;
       border-radius: 12px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
@@ -69,6 +69,33 @@
     #status.success {
       color: green;
     }
+    #messages {
+      margin-top: 25px;
+      border-top: 2px solid #eee;
+      padding-top: 15px;
+      max-height: 250px;
+      overflow-y: auto;
+    }
+    .msg {
+      background: #f1f3f9;
+      margin: 8px 0;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 0.95em;
+    }
+    .msg.blocked {
+      background: #ffe5e5;
+      border-left: 4px solid red;
+    }
+    .msg.success {
+      border-left: 4px solid green;
+    }
+    .msg-time {
+      font-size: 0.8em;
+      color: #777;
+      margin-top: 4px;
+      text-align: right;
+    }
   </style>
 </head>
 <body>
@@ -78,12 +105,29 @@
     <textarea id="message" placeholder="Type your alert here..."></textarea>
     <button id="sendBtn">Send Message</button>
     <p id="status"></p>
+
+    <section id="messages">
+      <h3>📜 Sent Messages</h3>
+    </section>
   </main>
 
   <script>
     const sendBtn = document.getElementById('sendBtn');
     const messageInput = document.getElementById('message');
     const statusText = document.getElementById('status');
+    const messagesDiv = document.getElementById('messages');
+
+    function addMessageToFeed(text, type) {
+      const div = document.createElement('div');
+      div.classList.add('msg', type);
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      div.innerHTML = `
+        <div>${text}</div>
+        <div class="msg-time">${time}</div>
+      `;
+      messagesDiv.appendChild(div);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
 
     sendBtn.addEventListener('click', async () => {
       const message = messageInput.value.trim();
@@ -104,16 +148,18 @@
         });
 
         const result = await response.json();
+
         if (result.blocked) {
           statusText.textContent = "Message blocked by filter.";
           statusText.className = "blocked";
+          addMessageToFeed("[Blocked Message]", "blocked");
         } else if (result.discordSuccess || result.googleSuccess) {
           statusText.textContent = "Message sent successfully!";
           statusText.className = "success";
+          addMessageToFeed(message, "success");
           messageInput.value = "";
         } else {
           statusText.textContent = "Failed to send message.";
-          statusText.className = "";
         }
       } catch (error) {
         console.error(error);
