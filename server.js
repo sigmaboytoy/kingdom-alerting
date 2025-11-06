@@ -1,88 +1,110 @@
-import express from "express";
-import fetch from "node-fetch";
-import bodyParser from "body-parser";
-import path from "path";
-import { fileURLToPath } from "url";
+// server.js
+const express = require('express');
+const bodyParser = require('body-parser');
+const fetch = require('node-fetch');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ==================== CONFIG ====================
-const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1435775034365837342/zXkb3gRYzIFtmSgAWQ62YKDOiNL9ge8bU0qKfifI1kIZbaXnZ_qiumaWoZMknHvjBnYw";
-const GOOGLE_CHAT_WEBHOOK = "https://chat.googleapis.com/v1/spaces/AAAAtHf5I1A/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=tS_ALY3TyVsX84WLmf2Sj47hn1z-n4el4ZHeevFFuGg";
+app.use(bodyParser.json());
+app.use(express.static('public'));
 
-// Permanent blocklist (cannot be changed)
-const blocklist = [
-  "fuck","f*ck","fck","fock","fu",
-  "shit","sh*t","sh1t",
-  "bitch","b1tch","biatch","b!tch",
-  "asshole","a**hole","assh0le","ass","a$$",
-  "damn","d*mn","damm",
-  "cunt","c*nt","cunn",
-  "nigger","n1gger","nigga",
-  "slut","sl*t","whore","w*ore",
-  "fag","f4g","faggot","f@g",
-  "cock","c*ck","penis","dick","d!ck",
-  "pussy","p*ssy","bastard","b@stard",
-  "bollocks","arse","crap","prick"
+// === Webhook URLs ===
+const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1435775034365837342/zXkb3gRYzIFtmSgAWQ62YKDOiNL9ge8bU0qKfifI1kIZbaXnZ_qiumaWoZMknHvjBnYw';
+const GOOGLE_CHAT_WEBHOOK = 'https://chat.googleapis.com/v1/spaces/AAAAtHf5I1A/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=tS_ALY3TyVsX84WLmf2Sj47hn1z-n4el4ZHeevFFuGg';
+
+// === Bad word filter (automatic, no add/remove) ===
+const blockedWords = [
+  'fuck','fck','fock','fu','shit','sh1t','bitch','b1tch','ass','a55',
+  'damn','d4mn','dick','d1ck','piss','p1ss','cunt','c*nt','nigger','n1gger',
+  'nigga','n1gga','bastard','b4stard','slut','slutty','whore','w0re','fag','f4g',
+  'faggot','f4ggot','motherfucker','m0therfucker'
 ];
 
-// ==================== MIDDLEWARE ====================
-app.use(bodyParser.json());
-app.use(express.static("public"));
-
-// ==================== ROUTES ====================
-
-// Serve the frontend HTML
-app.get("/", (req, res) => {
-  res.sendFile(path.join(path.dirname(fileURLToPath(import.meta.url)), "index.html"));
-});
-
-// Send message endpoint
-app.post("/send-message", async (req, res) => {
-  let { message } = req.body;
-  if (!message) return res.status(400).json({ error: "Message required" });
-
-  // Filter bad words
-  const lowerMessage = message.toLowerCase();
+// === Helper: filter message ===
+function filterMessage(message) {
+  let filtered = message;
   let blocked = false;
-  for (const word of blocklist) {
-    if (lowerMessage.includes(word)) {
+  blockedWords.forEach(word => {
+    const regex = new RegExp(word, 'gi');
+    if (regex.test(filtered)) {
+      filtered = filtered.replace(regex, '[blocked]');
       blocked = true;
-      message = "[blocked]";
-      break;
     }
+  });
+  return { filtered, blocked };
+}
+
+// === Save messages ===
+const MESSAGES_FILE = path.join(__dirname, 'messages.json');
+function saveMessage(messageObj) {
+  let messages = [];
+  if (fs.existsSync(MESSAGES_FILE)) {
+    messages = JSON.parse(fs.readFileSync(MESSAGES_FILE));
+  }
+  messages.push(messageObj);
+  fs.writeFileSync(MESSAGES_FILE, JSON.stringify(messages, null, 2));
+}
+
+// === Routes ===
+app.post('/send-message', async (req, res) => {
+  const { sender, school, message } = req.body;
+
+  if (!sender || !message || !school) {
+    return res.status(400).json({ success: false, error: 'Missing fields' });
   }
 
-  let discordSuccess = false;
-  let googleSuccess = false;
+  const { filtered, blocked } = filterMessage(message);
+  let status = 'success';
 
   if (!blocked) {
-    try {
-      const d = await fetch(DISCORD_WEBHOOK, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: message })
-      });
-      discordSuccess = d.ok;
-    } catch (e) {
-      console.error("Discord webhook failed", e);
-    }
+    // Send to Discord
+    const discordRes = await fetch(DISCORD_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: `**${sender} [${school}]**: ${filtered}` })
+    });
 
-    try {
-      const g = await fetch(GOOGLE_CHAT_WEBHOOK, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: message })
-      });
-      googleSuccess = g.ok;
-    } catch (e) {
-      console.error("Google Chat webhook failed", e);
+    // Send to Google Chat
+    const googleRes = await fetch(GOOGLE_CHAT_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: `**${sender} [${school}]**: ${filtered}` })
+    });
+
+    if (!discordRes.ok || !googleRes.ok) {
+      status = 'error';
     }
+  } else {
+    status = 'blocked';
   }
 
-  res.json({ blocked, discordSuccess, googleSuccess });
+  const msgObj = {
+    sender,
+    school,
+    original_message: message,
+    filtered_message: filtered,
+    blocked,
+    status,
+    timestamp: new Date().toISOString()
+  };
+
+  saveMessage(msgObj);
+  res.json({ success: true, message: msgObj });
 });
 
-// ==================== START SERVER ====================
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Fetch all messages
+app.get('/messages', (req, res) => {
+  if (fs.existsSync(MESSAGES_FILE)) {
+    const messages = JSON.parse(fs.readFileSync(MESSAGES_FILE));
+    return res.json(messages);
+  }
+  res.json([]);
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
