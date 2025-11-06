@@ -1,95 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Kingdom Alerting</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kingdom Alerting - Login</title>
   <style>
-    body { background:#f6f7f9; font-family: Arial,sans-serif; display:flex; flex-direction:column; align-items:center; margin:0; padding:0; }
-    header { background:#334; color:white; width:100%; text-align:center; padding:15px 0; font-size:1.5em; letter-spacing:1px; }
-    main { margin-top:30px; width:90%; max-width:650px; background:white; border-radius:12px; box-shadow:0 0 10px rgba(0,0,0,0.1); padding:20px; }
-    input,textarea { width:100%; font-size:1em; border-radius:8px; border:1px solid #ccc; padding:10px; outline:none; }
-    textarea { height:100px; resize:none; }
-    button { margin-top:10px; background:#4a6cf7; color:white; border:none; border-radius:8px; padding:12px 16px; cursor:pointer; font-size:1em; transition:background 0.2s; }
+    body { font-family: Arial, sans-serif; background:#f6f7f9; display:flex; justify-content:center; align-items:center; height:100vh; }
+    #registration { background:white; padding:30px; border-radius:12px; box-shadow:0 0 10px rgba(0,0,0,0.1); width:90%; max-width:400px; }
+    input, select { width:100%; padding:10px; margin:10px 0; border-radius:8px; border:1px solid #ccc; }
+    button { width:100%; padding:12px; border:none; border-radius:8px; background:#4a6cf7; color:white; font-size:1em; cursor:pointer; }
     button:hover { background:#3957d1; }
-    #status { margin-top:15px; font-size:0.9em; color:#333; }
-    #status.blocked { color:red; }
-    #status.success { color:green; }
-    #messages { margin-top:25px; border-top:2px solid #eee; padding-top:15px; max-height:250px; overflow-y:auto; }
-    .msg { background:#f1f3f9; margin:8px 0; padding:10px; border-radius:8px; font-size:0.95em; }
-    .msg.blocked { background:#ffe5e5; border-left:4px solid red; }
-    .msg.success { border-left:4px solid green; }
-    .msg-time { font-size:0.8em; color:#777; margin-top:4px; text-align:right; }
-    #registration { margin-bottom:20px; }
+    #regStatus { margin-top:10px; font-size:0.9em; color:red; }
   </style>
 </head>
 <body>
-  <header>Kingdom Alerting</header>
-  <main>
-    <div id="registration">
-      <h3>👤 Register / Login</h3>
-      <input type="text" id="username" placeholder="Enter username (2-30 chars)" /><br><br>
-      <input type="email" id="email" placeholder="Enter @pdsb.net email" /><br><br>
-      <button id="registerBtn">Register</button>
-      <p id="regStatus"></p>
-    </div>
-
-    <div id="composeArea" style="display:none;">
-      <label for="message">Enter your message:</label>
-      <textarea id="message" placeholder="Type your alert here..."></textarea>
-      <button id="sendBtn">Send Message</button>
-      <p id="status"></p>
-    </div>
-
-    <section id="messages">
-      <h3>📜 Sent Messages</h3>
-    </section>
-  </main>
+  <div id="registration">
+    <h3>👤 Register / Login</h3>
+    <input type="text" id="username" placeholder="Enter username (2-30 chars)">
+    <input type="email" id="email" placeholder="Enter @pdsb.net email">
+    <label for="school">Select your school:</label>
+    <select id="school">
+      <option value="">--Select Peel School--</option>
+      <option value="home_school">Home School</option>
+      <option value="online_learning">Online Learning</option>
+      <option value="applewood_college">Applewood College</option>
+      <option value="braemar_college">Braemar College</option>
+      <option value="central_peel_secondary">Central Peel Secondary</option>
+      <option value="other_peel_school">Other Peel School</option>
+    </select>
+    <button id="registerBtn">Register</button>
+    <p id="regStatus"></p>
+  </div>
 
   <script>
-    const sendBtn = document.getElementById('sendBtn');
-    const messageInput = document.getElementById('message');
-    const statusText = document.getElementById('status');
-    const messagesDiv = document.getElementById('messages');
-
     const registerBtn = document.getElementById('registerBtn');
     const usernameInput = document.getElementById('username');
     const emailInput = document.getElementById('email');
+    const schoolSelect = document.getElementById('school');
     const regStatus = document.getElementById('regStatus');
-    const composeArea = document.getElementById('composeArea');
-
-    const badWords = [
-      'fuck','fck','fock','fu','shit','sh1t','shyt','bitch','b1tch','b!tch','ass','a55','dick','d1ck','damn','cunt','c*nt','whore','slut'
-    ];
-
-    let messages = JSON.parse(localStorage.getItem('messages')) || [];
-    let user = JSON.parse(localStorage.getItem('user')) || null;
-
-    function saveMessages() {
-      localStorage.setItem('messages', JSON.stringify(messages));
-    }
-
-    function addMessageToFeed(text, type) {
-      const div = document.createElement('div');
-      div.classList.add('msg', type);
-      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      div.innerHTML = `<div>${text}</div><div class="msg-time">${time}</div>`;
-      messagesDiv.appendChild(div);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
-
-    function refreshMessages() {
-      messagesDiv.innerHTML = '<h3>📜 Sent Messages</h3>';
-      messages.forEach(msg => addMessageToFeed(msg.text, msg.blocked ? 'blocked' : 'success'));
-    }
-
-    function filterMessage(msg) {
-      const lower = msg.toLowerCase();
-      for (const word of badWords) {
-        if (lower.includes(word)) return { filtered: '[Blocked]', blocked:true };
-      }
-      return { filtered: msg, blocked:false };
-    }
 
     function isValidEmail(email) {
       return email.toLowerCase().endsWith('@pdsb.net') && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -99,63 +47,29 @@
       return /^[a-zA-Z0-9_-]{2,30}$/.test(name.trim());
     }
 
-    function registerUser() {
+    function isValidSchool(school) {
+      return school !== "";
+    }
+
+    registerBtn.addEventListener('click', () => {
       const name = usernameInput.value.trim();
       const email = emailInput.value.trim();
+      const school = schoolSelect.value;
+
       if(!isValidUsername(name)) { regStatus.textContent="Invalid username"; return; }
       if(!isValidEmail(email)) { regStatus.textContent="Email must be @pdsb.net"; return; }
+      if(!isValidSchool(school)) { regStatus.textContent="Please select your school"; return; }
 
-      user = { username:name, email:email };
+      const user = { username:name, email:email, school:school };
       localStorage.setItem('user', JSON.stringify(user));
-      regStatus.textContent = `Welcome ${name}!`;
-      composeArea.style.display = 'block';
-      document.getElementById('registration').style.display = 'none';
+
+      window.location.href = 'chat.html'; // redirect to chat page
+    });
+
+    // Auto redirect if user is already logged in
+    if(localStorage.getItem('user')) {
+      window.location.href = 'chat.html';
     }
-
-    registerBtn.addEventListener('click', registerUser);
-
-    if(user) {
-      composeArea.style.display = 'block';
-      document.getElementById('registration').style.display = 'none';
-      regStatus.textContent = `Welcome back ${user.username}!`;
-    }
-
-    async function sendMessage() {
-      const text = messageInput.value.trim();
-      if(!text) return;
-
-      const filtered = filterMessage(text);
-      messages.push({ text:filtered.filtered, blocked:filtered.blocked });
-      saveMessages();
-      refreshMessages();
-      messageInput.value = '';
-      statusText.textContent = filtered.blocked ? 'Message blocked by filter' : 'Message sent!';
-      statusText.className = filtered.blocked ? 'blocked' : 'success';
-
-      // Send to webhooks
-      if(!filtered.blocked) {
-        try {
-          await fetch('https://discord.com/api/webhooks/1435775034365837342/zXkb3gRYzIFtmSgAWQ62YKDOiNL9ge8bU0qKfifI1kIZbaXnZ_qiumaWoZMknHvjBnYw',{
-            method:'POST',
-            headers:{ 'Content-Type':'application/json' },
-            body: JSON.stringify({ content:text })
-          });
-
-          await fetch('https://chat.googleapis.com/v1/spaces/AAAAtHf5I1A/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=tS_ALY3TyVsX84WLmf2Sj47hn1z-n4el4ZHeevFFuGg',{
-            method:'POST',
-            headers:{ 'Content-Type':'application/json' },
-            body: JSON.stringify({ text:text })
-          });
-        } catch(e){ console.error(e); }
-      }
-    }
-
-    sendBtn.addEventListener('click', sendMessage);
-
-    // Auto refresh every 5 seconds
-    setInterval(refreshMessages, 5000);
-
-    refreshMessages();
   </script>
 </body>
 </html>
