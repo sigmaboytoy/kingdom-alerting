@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kingdom Alerting - Dashboard</title>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f7fafc;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #667eea;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+    main {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 1rem;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+    h1 {
+      margin-top: 0;
+      color: #2d3748;
+    }
+    label {
+      display: block;
+      margin: 0.5rem 0 0.25rem;
+      font-weight: 600;
+    }
+    input, textarea, button {
+      width: 100%;
+      padding: 0.75rem;
+      margin-bottom: 1rem;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    input:focus, textarea:focus {
+      border-color: #667eea;
+      outline: none;
+    }
+    button {
+      background: #667eea;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+    }
+    button:hover { background: #5568d3; }
+    .notification {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      background: white;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      max-width: 300px;
+    }
+    .notification.show { display: flex; }
+    .notification.error { border-left: 4px solid #f56565; }
+    .notification.success { border-left: 4px solid #48bb78; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🛡️ Kingdom Alerting Dashboard</h1>
+  </header>
+
+  <main>
+    <h2>Welcome, <span id="userDisplay"></span></h2>
+    <p>School: <span id="schoolDisplay"></span></p>
+
+    <label for="message">Send a message:</label>
+    <textarea id="message" rows="4" placeholder="Type your message..."></textarea>
+    <button id="sendMessage">Send</button>
+  </main>
+
+  <div class="notification" id="notification"><span id="notificationText"></span></div>
+
+  <script>
+    const notification = document.getElementById('notification');
+    const notificationText = document.getElementById('notificationText');
+
+    function showNotification(message, type='success') {
+      notificationText.textContent = message;
+      notification.className = `notification ${type} show`;
+      setTimeout(() => { notification.classList.remove('show'); }, 4000);
+    }
+
+    // Load user info
+    const user = JSON.parse(localStorage.getItem('userProfile'));
+    if(!user) {
+      window.location.href = 'login.html';
+    }
+    document.getElementById('userDisplay').textContent = user.username;
+    document.getElementById('schoolDisplay').textContent = user.school;
+
+    // Bad words list
+    const badWords = ["badword1","badword2","badword3"]; // Add all variants here
+
+    function filterMessage(msg) {
+      let filtered = msg;
+      badWords.forEach(word => {
+        const regex = new RegExp(word, 'gi');
+        filtered = filtered.replace(regex, '****');
+      });
+      return filtered;
+    }
+
+    document.getElementById('sendMessage').addEventListener('click', async () => {
+      const msg = document.getElementById('message').value.trim();
+      if(!msg) return showNotification('Message cannot be empty', 'error');
+
+      const filteredMsg = filterMessage(msg);
+
+      // Example: Webhook URLs
+      const discordWebhook = "YOUR_DISCORD_WEBHOOK";
+      const googleChatWebhook = "YOUR_GOOGLE_CHAT_WEBHOOK";
+
+      const payloadDiscord = {
+        content: `${user.username} (${user.school}): ${filteredMsg}`
+      };
+
+      const payloadGoogleChat = {
+        text: `${user.username} (${user.school}): ${filteredMsg}`
+      };
+
+      try {
+        // Send to Discord
+        await fetch(discordWebhook, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payloadDiscord)
+        });
+
+        // Send to Google Chat
+        await fetch(googleChatWebhook, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payloadGoogleChat)
+        });
+
+        showNotification('Message sent!', 'success');
+        document.getElementById('message').value = '';
+      } catch(e) {
+        showNotification('Failed to send message', 'error');
+        console.error(e);
+      }
+    });
+  </script>
+</body>
+</html>
