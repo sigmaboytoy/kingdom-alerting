@@ -1,75 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kingdom Alerting - Login</title>
-  <style>
-    body { font-family: Arial, sans-serif; background:#f6f7f9; display:flex; justify-content:center; align-items:center; height:100vh; }
-    #registration { background:white; padding:30px; border-radius:12px; box-shadow:0 0 10px rgba(0,0,0,0.1); width:90%; max-width:400px; }
-    input, select { width:100%; padding:10px; margin:10px 0; border-radius:8px; border:1px solid #ccc; }
-    button { width:100%; padding:12px; border:none; border-radius:8px; background:#4a6cf7; color:white; font-size:1em; cursor:pointer; }
-    button:hover { background:#3957d1; }
-    #regStatus { margin-top:10px; font-size:0.9em; color:red; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kingdom Alerting - Login</title>
+<style>
+body { font-family: Arial,sans-serif; background: #f0f4f8; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; }
+.container { background:white; padding:2rem; border-radius:12px; width:300px; box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+input, select { width:100%; padding:0.5rem; margin-bottom:1rem; border-radius:6px; border:1px solid #ccc; }
+button { padding:0.5rem; width:100%; background:#667eea; color:white; border:none; border-radius:6px; cursor:pointer;}
+button:hover{background:#5568d3;}
+</style>
 </head>
 <body>
-  <div id="registration">
-    <h3>👤 Register / Login</h3>
-    <input type="text" id="username" placeholder="Enter username (2-30 chars)">
-    <input type="email" id="email" placeholder="Enter @pdsb.net email">
-    <label for="school">Select your school:</label>
-    <select id="school">
-      <option value="">--Select Peel School--</option>
-      <option value="home_school">Home School</option>
-      <option value="online_learning">Online Learning</option>
-      <option value="applewood_college">Applewood College</option>
-      <option value="braemar_college">Braemar College</option>
-      <option value="central_peel_secondary">Central Peel Secondary</option>
-      <option value="other_peel_school">Other Peel School</option>
-    </select>
-    <button id="registerBtn">Register</button>
-    <p id="regStatus"></p>
-  </div>
+<div class="container">
+<h2>Kingdom Alerting</h2>
+<form id="signupForm">
+<input type="text" id="username" placeholder="Username" required minlength="2" maxlength="30">
+<input type="email" id="email" placeholder="Email (@pdsb.net)" required>
+<select id="school" required>
+  <option value="">Select your school</option>
+  <option value="Peel High School">Peel High School</option>
+  <option value="Peel Secondary School">Peel Secondary School</option>
+  <option value="Home School">Home School</option>
+  <option value="Online School">Online School</option>
+  <!-- add more Peel schools -->
+</select>
+<button type="submit">Sign Up / Login</button>
+</form>
+<p id="status" style="color:red;"></p>
+</div>
 
-  <script>
-    const registerBtn = document.getElementById('registerBtn');
-    const usernameInput = document.getElementById('username');
-    const emailInput = document.getElementById('email');
-    const schoolSelect = document.getElementById('school');
-    const regStatus = document.getElementById('regStatus');
+<script>
+const form = document.getElementById('signupForm');
+form.addEventListener('submit', (e)=>{
+  e.preventDefault();
+  const username = document.getElementById('username').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const school = document.getElementById('school').value;
 
-    function isValidEmail(email) {
-      return email.toLowerCase().endsWith('@pdsb.net') && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    }
-
-    function isValidUsername(name) {
-      return /^[a-zA-Z0-9_-]{2,30}$/.test(name.trim());
-    }
-
-    function isValidSchool(school) {
-      return school !== "";
-    }
-
-    registerBtn.addEventListener('click', () => {
-      const name = usernameInput.value.trim();
-      const email = emailInput.value.trim();
-      const school = schoolSelect.value;
-
-      if(!isValidUsername(name)) { regStatus.textContent="Invalid username"; return; }
-      if(!isValidEmail(email)) { regStatus.textContent="Email must be @pdsb.net"; return; }
-      if(!isValidSchool(school)) { regStatus.textContent="Please select your school"; return; }
-
-      const user = { username:name, email:email, school:school };
-      localStorage.setItem('user', JSON.stringify(user));
-
-      window.location.href = 'chat.html'; // redirect to chat page
-    });
-
-    // Auto redirect if user is already logged in
-    if(localStorage.getItem('user')) {
-      window.location.href = 'chat.html';
-    }
-  </script>
+  if(!email.endsWith('@pdsb.net')){
+    document.getElementById('status').textContent='Use a valid @pdsb.net email.';
+    return;
+  }
+  // Save user info in localStorage
+  localStorage.setItem('user', JSON.stringify({username,email,school}));
+  window.location.href='chat.html';
+});
+</script>
 </body>
 </html>
+
